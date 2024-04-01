@@ -1,7 +1,5 @@
 # Flutter iOS IPA Build: No Apple Developer Account or MacBook Needed! 100% FREE • FLUTTER Tutorial
 ### [Watch on YouTube](https://youtu.be/mQMy12Sk0xM)
- 
-## Preview
 ![maxresdefault](https://github.com/AmirBayat0/iOS_iPA/assets/91388754/7bdb4531-f966-48f2-8c23-e1238d8979b5)
 
 
