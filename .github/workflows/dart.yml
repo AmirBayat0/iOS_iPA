@@ -8,35 +8,53 @@ jobs:
     name: 🎉 iOS Build
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v2
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          architecture: x64
-      - run: flutter pub get
-      
 
-      - run: pod repo update
-        working-directory: ios
+      - name: Create Firebase Config File
+        run: |
+          # البحث عن فولدر ios/Runner في أي مكان وتنزيل الملف فيه
+          TARGET_DIR=$(find . -name "Runner" -type d -path "*/ios/*" | head -n 1)
+          echo "${{ secrets.FIREBASE_IOS_CONFIG }}" | base64 --decode > "$TARGET_DIR/GoogleService-Info.plist"
 
-      - run: flutter build ios --release --no-codesign
+      - name: Install Dependencies
+        run: |
+          flutter pub get
+          # البحث عن فولدر ios وتشغيل pod install جواه
+          IOS_DIR=$(find . -name "ios" -type d | head -n 1)
+          cd "$IOS_DIR"
+          
+          # لو مفيش Podfile، هنخليه يعمل واحد مبدئي
+          if [ ! -f "Podfile" ]; then
+            echo "Podfile not found, creating a default one..."
+            flutter build ios --no-codesign --config-only
+          fi
+          
+          # تعديل الـ Deployment Target لـ 13.0
+          sed -i '' "s/# platform :ios, '9.0'/platform :ios, '13.0'/g" Podfile
+          sed -i '' "s/platform :ios, '12.0'/platform :ios, '13.0'/g" Podfile
+          
+          pod install
 
-      - run: mkdir Payload
-        working-directory: build/ios/iphoneos
+      - name: Build iOS App Bundle
+        run: flutter build ios --release --no-codesign
 
-      - run: mv Runner.app/ Payload
-        working-directory: build/ios/iphoneos
+      - name: Create IPA (The Hack)
+        run: |
+          # البحث عن الـ .app اللي اتعمله build
+          APP_PATH=$(find build/ios/iphoneos -name "*.app" | head -n 1)
+          mkdir -p Payload
+          cp -r "$APP_PATH" Payload/
+          zip -r FlutterIpaExport.ipa Payload
 
-      - name: Zip output
-        run: zip -qq -r -9 FlutterIpaExport.ipa Payload
-        working-directory: build/ios/iphoneos
-
-      - name: Upload binaries to release
-        uses: svenstaro/upload-release-action@v2
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: build/ios/iphoneos/FlutterIpaExport.ipa
-          tag: v1.0
+          name: ios-ipa-release
+          path: FlutterIpaExport.ipa
           overwrite: true
-          body: "This is first release"
