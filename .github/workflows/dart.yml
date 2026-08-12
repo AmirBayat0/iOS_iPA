@@ -1,42 +1,55 @@
-name: iOS-ipa-build
+name: Build Flutter iOS
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   build-ios:
-    name: 🎉 iOS Build
-    runs-on: macos-latest
+    runs-on: macos-15
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v2
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
-          architecture: x64
-      - run: flutter pub get
-      
+          channel: stable
 
-      - run: pod repo update
-        working-directory: ios
+      - name: Flutter version
+        run: flutter --version
 
-      - run: flutter build ios --release --no-codesign
+      - name: Flutter doctor
+        run: flutter doctor -v
 
-      - run: mkdir Payload
-        working-directory: build/ios/iphoneos
+      - name: Get dependencies
+        run: flutter pub get
 
-      - run: mv Runner.app/ Payload
-        working-directory: build/ios/iphoneos
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install --repo-update
 
-      - name: Zip output
-        run: zip -qq -r -9 FlutterIpaExport.ipa Payload
-        working-directory: build/ios/iphoneos
+      - name: Build iOS
+        run: flutter build ios --release --no-codesign
 
-      - name: Upload binaries to release
-        uses: svenstaro/upload-release-action@v2
+      - name: Build Runner archive
+        run: |
+          cd ios
+          xcodebuild \
+            -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath $PWD/build/Runner.xcarchive \
+            archive \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Upload build
+        uses: actions/upload-artifact@v4
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: build/ios/iphoneos/FlutterIpaExport.ipa
-          tag: v1.0
-          overwrite: true
-          body: "This is first release"
+          name: ios-build
+          path: ios/build/Runner.xcarchive
