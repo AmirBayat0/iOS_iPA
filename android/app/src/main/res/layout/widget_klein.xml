@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Das kleine Widget: zwei Zeilen und ein Balken.
+
+  Bewusst karg. Ein Widget wird im Vorbeigehen gelesen, nicht studiert — und
+  es hat auf 2x1 Zellen nicht mehr Platz als eine Überschrift, eine Zeile
+  Erläuterung und eine Linie Fortschritt. Alles darüber hinaus wäre auf einem
+  schmalen Startbildschirm nur abgeschnitten.
+
+  Nur RemoteViews-taugliche Bausteine: LinearLayout, TextView, ProgressBar,
+  ImageView. ConstraintLayout und eigene Ansichten funktionieren hier nicht.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_wurzel"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_hintergrund"
+    android:padding="14dp"
+    android:gravity="center_vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:id="@+id/widget_symbol"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_marginEnd="8dp"
+            android:src="@drawable/ic_notification"
+            android:tint="@color/widget_akzent"
+            android:contentDescription="@string/app_name" />
+            <!-- Das Benachrichtigungssymbol ist eine flache weiße
+                 Silhouette; auf heller Fläche wäre es unsichtbar. Der
+                 Farbton kommt deshalb aus den Widget-Farben und wechselt
+                 mit dem Nachtmodus mit. -->
+
+        <TextView
+            android:id="@+id/widget_titel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="@color/widget_titel"
+            android:text="@string/app_name" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/widget_zeile"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:textSize="12sp"
+        android:textColor="@color/widget_leise"
+        android:text="@string/widget_platzhalter" />
+
+    <ProgressBar
+        android:id="@+id/widget_balken"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="6dp"
+        android:layout_marginTop="10dp"
+        android:max="100"
+        android:progress="0"
+        android:progressDrawable="@drawable/widget_balken_spur" />
+</LinearLayout>

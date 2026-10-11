@@ -31,12 +31,34 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Das Widget öffnet die App über „taeglichklueger://azkar"
+                 beziehungsweise „…//lernen"; die Oberfläche liest daraus den
+                 Bereich ab. Ohne diesen Filter käme der Tipp nicht an. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:scheme="taeglichklueger"/>
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- Das kleine Widget für den Startbildschirm. Der Empfänger muss
+             exportiert sein: Ihn ruft der Startbildschirm auf, nicht die
+             App. -->
+        <receiver
+            android:name=".KleinesWidget"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_klein_info" />
+        </receiver>
 
         <!-- Empfänger des Benachrichtigungs-Plugins: stellt die geplanten
              Erinnerungen zu und plant sie nach einem Neustart neu. -->

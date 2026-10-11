@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 3.10.0+21
+version: 3.11.0+22
 
 environment:
   sdk: '>=3.1.0 <4.0.0'
@@ -54,6 +54,10 @@ dependencies:
   # Für „Version X ist da": die laufende Version und das Öffnen der Adresse.
   package_info_plus: ^10.0.0
   url_launcher: ^6.3.0
+
+  # Kleines Widget für den Startbildschirm: schreibt die Werte dorthin, wo
+  # die Android-Seite sie liest, und stößt das Neuzeichnen an.
+  home_widget: ^0.10.0
 
   # Gebetszeiten für die Azkar — reines Dart, rechnet offline.
   adhan: ^2.0.0

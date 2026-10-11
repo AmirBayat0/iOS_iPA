@@ -1,8 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:home_widget/home_widget.dart';
 
 import '../models/subject.dart';
 import '../state/daily_card_store.dart';
 import '../state/daily_feed.dart';
+import '../state/home_widget_bridge.dart';
+import '../state/home_widget_view.dart';
 import '../state/learning_state.dart';
 import '../widgets/reward_sheet.dart';
 import 'achievements_screen.dart';
@@ -50,6 +55,40 @@ class _AppShellState extends State<AppShell> {
       if (!DailyCardScope.of(context).enabled) return;
       DailyFeedScope.of(context).ensureFresh();
     });
+    unawaited(_vomWidget());
+    // Tippt man das Widget an, während die App im Hintergrund liegt, ist das
+    // kein neuer Start — dann kommt die Adresse über diesen Strom.
+    _vomWidgetSpaeter = HomeWidget.widgetClicked.listen(_zeigeZiel);
+  }
+
+  StreamSubscription<Uri?>? _vomWidgetSpaeter;
+
+  @override
+  void dispose() {
+    _vomWidgetSpaeter?.cancel();
+    super.dispose();
+  }
+
+  void _zeigeZiel(Uri? adresse) {
+    final WidgetZiel? ziel = zielAusAdresse(adresse);
+    if (ziel == null || !mounted) return;
+    setState(() =>
+        _index = ziel == WidgetZiel.azkar ? AppTabs.azkar : AppTabs.lernen);
+  }
+
+  /// Kam der Start von einem Tipp auf das Widget, den passenden Bereich
+  /// öffnen.
+  ///
+  /// Das Widget zeigt genau eine Sache; wer darauf tippt, will **die** sehen
+  /// und nicht von der Startseite aus weitersuchen.
+  Future<void> _vomWidget() async {
+    try {
+      _zeigeZiel(await HomeWidget.initiallyLaunchedFromHomeWidget());
+    } catch (error) {
+      // Auf einer Plattform ohne Widgets oder bei einem gewöhnlichen Start
+      // ist hier nichts zu holen — das ist kein Fehler.
+      debugPrint('Widget-Start nicht auswertbar: $error');
+    }
   }
 
   @override
@@ -125,6 +164,9 @@ class _AppShellState extends State<AppShell> {
 /// Bereich.
 class AppTabs extends InheritedWidget {
   const AppTabs({super.key, required this.goTo, required super.child});
+
+  /// Der Bereich „Lernen" — die Startseite des gewählten Fachs.
+  static const int lernen = 0;
 
   /// Der Bereich „Azkar" — Morgen- und Abendgedenken.
   static const int azkar = 2;

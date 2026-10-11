@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Die Farben des Widgets, hell. Dieselben Töne wie in der App:
+     Teal als Akzent, eine ruhige Fläche darunter. -->
+<resources>
+    <color name="widget_flaeche">#FFF7F9F8</color>
+    <color name="widget_titel">#FF17201E</color>
+    <color name="widget_leise">#FF4C5A57</color>
+    <color name="widget_akzent">#FF1A6E62</color>
+    <color name="widget_balken">#FFD7E4E1</color>
+</resources>

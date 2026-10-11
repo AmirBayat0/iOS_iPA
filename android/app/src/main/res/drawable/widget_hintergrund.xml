@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Abgerundete Fläche. Der Radius folgt dem der Karten in der App. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/widget_flaeche" />
+    <corners android:radius="20dp" />
+</shape>

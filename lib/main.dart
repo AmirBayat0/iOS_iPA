@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import 'data/content_registry.dart';
+import 'data/azkar_data.dart';
 import 'data/knowledge/knowledge_data.dart';
 import 'screens/app_shell.dart';
 import 'theme/app_theme.dart';
@@ -20,6 +21,8 @@ import 'state/lesson_store.dart';
 import 'state/reward_store.dart';
 import 'models/azkar.dart';
 import 'state/azkar_store.dart';
+import 'state/home_widget_bridge.dart';
+import 'state/home_widget_view.dart';
 import 'state/prayer_times.dart';
 import 'state/sharing.dart';
 import 'state/update_check.dart';
@@ -62,6 +65,7 @@ class _TaeglichKluegerAppState extends State<TaeglichKluegerApp>
   final UpdateService _updates = UpdateService();
   final AzkarSettings _azkarSettings = AzkarSettings();
   final AzkarStore _azkar = AzkarStore();
+  final HomeWidgetBridge _widget = HomeWidgetBridge();
 
   @override
   void initState() {
@@ -98,7 +102,7 @@ class _TaeglichKluegerAppState extends State<TaeglichKluegerApp>
     _azkar.addListener(_planeErinnerungen);
     _azkarSettings.addListener(_planeErinnerungen);
     _azkarSettings.load();
-    _azkar.load();
+    _azkar.load().then((_) => _schreibeWidget());
     unawaited(_pruefeVersion());
     // Der Erinnerungsplan wird beim Start **und** beim Zuklappen neu
     // geschrieben — siehe didChangeAppLifecycleState.
@@ -115,7 +119,11 @@ class _TaeglichKluegerAppState extends State<TaeglichKluegerApp>
   /// keine davon überflüssig ist.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused) unawaited(_setUpReminders());
+    if (state != AppLifecycleState.paused) return;
+    unawaited(_setUpReminders());
+    // Das Widget wird beim Zuklappen geschrieben, nicht bei jeder Antwort:
+    // Niemand liest es, während die App offen ist.
+    unawaited(_schreibeWidget());
   }
 
   /// Bei jedem Start den Erinnerungsplan auffrischen: Ein Tag, an dem das
@@ -131,7 +139,45 @@ class _TaeglichKluegerAppState extends State<TaeglichKluegerApp>
     );
   }
 
-  void _planeErinnerungen() => unawaited(_setUpReminders());
+  void _planeErinnerungen() {
+    unawaited(_setUpReminders());
+    unawaited(_schreibeWidget());
+  }
+
+  /// Den Stand ins kleine Widget legen.
+  Future<void> _schreibeWidget() async {
+    if (!_state.isLoaded) return;
+    final DateTime jetzt = DateTime.now();
+    await _widget.push(buildWidgetAnsicht(
+      now: jetzt,
+      facts: WidgetFacts(
+        dayStreak: _state.dayStreak,
+        dailyGoal: _state.dailyGoal,
+        answeredToday: _state.answeredToday,
+        blockNumber: _state.blockNumber,
+        blockLearned: _state.blockLearned,
+        blockSize: _state.blockSize,
+        repetitionsDue: _state.repetitionsDueTotal,
+        azkar: _azkarFenster(jetzt),
+      ),
+    ));
+  }
+
+  /// Die beiden Azkar-Fenster des Tages, soweit das Widget sie braucht.
+  /// Leer ohne eingestellten Ort — dann zeigt es nur den Lernstand.
+  List<WidgetAzkar> _azkarFenster(DateTime jetzt) => <WidgetAzkar>[
+        for (final AzkarTime t in AzkarTime.values)
+          if (_azkarSettings.fenster(t, jetzt) case final AzkarFenster f)
+            WidgetAzkar(
+              label: t.label,
+              beginn: f.beginn,
+              ende: f.ende,
+              faellig: f.faellig,
+              gesamt: azkarFor(time: t, level: _azkarSettings.level).length,
+              fertig: _azkar.fertigeVon(
+                  t, azkarFor(time: t, level: _azkarSettings.level)),
+            ),
+      ];
 
   /// Wann die Azkar an einem bestimmten Tag fällig sind.
   ///

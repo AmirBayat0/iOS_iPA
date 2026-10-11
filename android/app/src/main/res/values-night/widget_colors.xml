@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dieselben Rollen, dunkel. Ein Widget, das nachts weiß leuchtet, ist auf
+     einem dunklen Startbildschirm ein Fremdkörper. -->
+<resources>
+    <color name="widget_flaeche">#FF14191C</color>
+    <color name="widget_titel">#FFE6EDEB</color>
+    <color name="widget_leise">#FF9FB0AC</color>
+    <color name="widget_akzent">#FF6FD6C4</color>
+    <color name="widget_balken">#FF2A3A37</color>
+</resources>

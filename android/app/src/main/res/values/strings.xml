@@ -5,4 +5,11 @@
          Werkzeugkette. Der Paketname bleibt davon unberührt — er ist der
          Schlüssel für Updates und Lernstand. -->
     <string name="app_name">Täglich Klüger</string>
+
+    <!-- Was im Widget-Wähler des Startbildschirms unter dem Namen steht. -->
+    <string name="widget_beschreibung">Zeigt, was gerade dran ist — Azkar oder der laufende Block.</string>
+
+    <!-- Nur die Vorschau im Widget-Wähler, bevor die App Werte hinterlegt
+         hat. Im Betrieb steht hier immer echter Text. -->
+    <string name="widget_platzhalter">Zum Einrichten antippen</string>
 </resources>

@@ -726,6 +726,59 @@ ohne sie vollständig funktionieren — der Feed ist Beiwerk, nicht Fundament.
 Getestet wird er gegen abgelegte echte Antworten unter `test/data/`, nicht
 gegen das Netz.
 
+## Ein kleines Widget für den Startbildschirm
+
+2x1 Zellen, zwei Zeilen, ein Balken. Es zeigt **immer nur eine Sache: was
+gerade dran ist.**
+
+```
+   ┌────────────────────────────┐
+   │ ◟ Morgen-Azkar             │
+   │   06:12 · 0 von 5          │
+   │   ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁     │
+   └────────────────────────────┘
+```
+
+Die Reihenfolge ist eine Entscheidung und keine Laune:
+
+1. **Ein offenes Azkar-Fenster hat Vorrang.** Es hat eine Zeit, die vergeht;
+   das Lernen hat den ganzen Tag.
+2. Sonst der laufende Block — fällige Wiederholungen zuerst, denn die sind
+   das, was sonst verfällt.
+3. Sonst das nächste Azkar-Fenster des Tages, mit seiner Uhrzeit.
+4. Ist alles erledigt: „Durch für heute · 12 Tage am Stück". Dann **fordert
+   das Widget nichts mehr** — dieselbe Haltung wie bei der Tagesportion.
+
+Ein Tipp öffnet den Bereich, um den es gerade geht (`taeglichklueger://azkar`
+beziehungsweise `…//lernen`), nicht irgendeine Startseite, von der aus man
+noch zweimal tippen müsste.
+
+### Warum zwei Kacheln hinterlegt werden
+
+Ein Widget kann **nichts nachrechnen** — es zeigt, was die App zuletzt
+abgelegt hat. Ohne Zutun stünde um 05:00 „Block 3" und um 06:30, wenn das
+Fajr-Fenster längst offen ist, noch immer dasselbe.
+
+Deshalb legt die App zwei fertige Kacheln ab und **einen** Zeitpunkt, ab dem
+die zweite gilt. Die Android-Seite vergleicht nur die Uhr mit dieser Zahl —
+ein Vergleich, keine zweite Rechenlogik. Was angezeigt wird, entscheidet
+`buildWidgetAnsicht` (`lib/state/home_widget_view.dart`), eine reine Funktion
+mit eigenen Tests. Zusammen mit `updatePeriodMillis` (30 Minuten, Androids
+Untergrenze) wechselt die Anzeige von allein, auch wenn die App seit dem
+Abend nicht lief.
+
+### Geschrieben wird beim Zuklappen
+
+Nicht bei jeder Antwort: Niemand liest ein Widget, während die App offen ist.
+Und ein Stand, der sich nicht geändert hat, löst **kein** Neuzeichnen aus —
+der Startbildschirm soll nicht bei jedem Zuklappen flackern.
+
+Die Farben liegen in `values/widget_colors.xml` und `values-night/` doppelt:
+Ein Widget, das nachts weiß leuchtet, ist auf einem dunklen Startbildschirm
+ein Fremdkörper. Das Benachrichtigungssymbol ist eine flache weiße
+Silhouette und wird im Widget eingefärbt, sonst wäre es auf heller Fläche
+unsichtbar.
+
 ## Azkar: Morgen und Abend
 
 Ein vierter Bereich neben Lernen, Üben und Erfolge — und bewusst **keine
