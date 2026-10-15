@@ -797,8 +797,27 @@ Was nicht zur eigenen Stufe gehört, steht trotzdem unten unter **„Mehr, wenn
 du magst"** und lässt sich antippen. Wer an einem guten Tag mehr schafft, soll
 nicht erst in die Einstellungen.
 
-Antippen zählt hoch (`1 / 3`, `47 / 100`), langes Drücken setzt zurück. Kein
-Wischfeed, kein Fortschritt, der zum Weitermachen drängt.
+### Gesprochenes geht aus dem Weg
+
+Ein abgehaktes Dhikr blieb anfangs an seiner Stelle stehen, nur blasser — und
+arabische Texte sind lang. Auf der vollständigen Stufe scrollte man am Ende
+an zwanzig erledigten Karten vorbei, um die letzte offene zu finden.
+
+Jetzt verlässt Gesprochenes die Liste und sammelt sich darunter in einem
+Abschnitt **„Gesprochen · 7"**, der zugeklappt eine Zeile hoch ist.
+**Gelöscht wird nichts:** Aufgeklappt steht dort jedes Dhikr mit Quelle und
+einem Knopf **„Zurück"** — zum Nachsehen und für den Fall, dass man sich
+vertippt hat. Vorher war das Zurücknehmen ein langes Drücken auf der Karte,
+also ein Weg, den niemand findet, der ihn nicht kennt. (Für ein halb
+gezähltes Dhikr, „2 von 3", gibt es ihn weiterhin.)
+
+Ist eine Hälfte durch, steht statt der leeren Liste „Durch für diese Zeit".
+
+**Der Knopf zum Abhaken sieht jetzt wie einer aus.** Bei einem einmaligen
+Dhikr stand vorher nur das Wort „einmal"; dass die Karte sich antippen lässt,
+musste man raten. Jetzt steht dort **„Abhaken"** mit einem leeren Kreis, bei
+mehrfachen `3 / 7` mit einem Pluszeichen. Kein Wischfeed, kein Fortschritt,
+der zum Weitermachen drängt.
 
 ### Die Zeiten kommen aus den Gebetszeiten
 

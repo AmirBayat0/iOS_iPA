@@ -137,6 +137,142 @@ void main() {
     });
   });
 
+  group('Gesprochenes verlässt die Liste', () {
+    testWidgets('ein abgehaktes Dhikr steht nicht mehr oben',
+        (WidgetTester tester) async {
+      // Der Grund: Arabische Texte sind lang. Vorher scrollte man auf der
+      // vollständigen Stufe an zwanzig erledigten Karten vorbei, um die
+      // letzte offene zu finden.
+      tester.view.physicalSize = const Size(420, 6000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      final (AzkarStore store, AzkarSettings settings) = await dienste();
+      final List<Dhikr> pensum =
+          azkarFor(time: AzkarTime.morgens, level: AzkarLevel.leicht);
+      final Dhikr einmal = pensum.firstWhere((Dhikr d) => d.count == 1);
+
+      await tester.pumpWidget(rahmen(store, settings));
+      await tester.pumpAndSettle();
+      expect(find.textContaining(einmal.source), findsOneWidget);
+
+      await store.tippe(AzkarTime.morgens, einmal, pensum);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining(einmal.source), findsNothing,
+          reason: 'die Karte ist weg aus der offenen Liste');
+      expect(find.textContaining('Gesprochen · 1'), findsOneWidget);
+    });
+
+    testWidgets('ein halb gezähltes bleibt stehen',
+        (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(420, 6000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      final (AzkarStore store, AzkarSettings settings) = await dienste();
+      final List<Dhikr> pensum =
+          azkarFor(time: AzkarTime.morgens, level: AzkarLevel.leicht);
+      final Dhikr dreimal = pensum.firstWhere((Dhikr d) => d.count == 3);
+
+      await tester.pumpWidget(rahmen(store, settings));
+      await tester.pumpAndSettle();
+      await store.tippe(AzkarTime.morgens, dreimal, pensum);
+      await tester.pumpAndSettle();
+
+      expect(find.text('1 / 3'), findsOneWidget);
+      expect(find.textContaining('Gesprochen'), findsNothing);
+    });
+
+    testWidgets('aufgeklappt lässt es sich zurücknehmen',
+        (WidgetTester tester) async {
+      // Vorher war das ein langes Drücken — ein Weg, den niemand findet.
+      tester.view.physicalSize = const Size(420, 6000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      final (AzkarStore store, AzkarSettings settings) = await dienste();
+      final List<Dhikr> pensum =
+          azkarFor(time: AzkarTime.morgens, level: AzkarLevel.leicht);
+      final Dhikr einmal = pensum.firstWhere((Dhikr d) => d.count == 1);
+      await store.tippe(AzkarTime.morgens, einmal, pensum);
+
+      await tester.pumpWidget(rahmen(store, settings));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.textContaining('Gesprochen · 1'));
+      await tester.pumpAndSettle();
+      expect(find.text('Zurück'), findsOneWidget);
+
+      await tester.tap(find.text('Zurück'));
+      await tester.pumpAndSettle();
+      expect(store.istFertig(AzkarTime.morgens, einmal), isFalse);
+      expect(find.textContaining(einmal.source), findsOneWidget,
+          reason: 'die Karte ist wieder oben');
+    });
+
+    testWidgets('ist alles gesprochen, sagt der Bildschirm das',
+        (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(420, 6000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      final (AzkarStore store, AzkarSettings settings) = await dienste();
+      final List<Dhikr> pensum =
+          azkarFor(time: AzkarTime.morgens, level: AzkarLevel.leicht);
+      for (final Dhikr d in pensum) {
+        for (int i = 0; i < d.count; i++) {
+          await store.tippe(AzkarTime.morgens, d, pensum);
+        }
+      }
+
+      await tester.pumpWidget(rahmen(store, settings));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Durch für diese Zeit'), findsOneWidget);
+      expect(find.textContaining('Gesprochen · 5'), findsOneWidget);
+      expect(find.text('5 von 5 gesprochen'), findsNothing,
+          reason: 'der Kopf sagt „Durch für heute"');
+      expect(find.text('Durch für heute.'), findsOneWidget);
+    });
+
+    testWidgets('Morgen und Abend sammeln getrennt',
+        (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(420, 6000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      final (AzkarStore store, AzkarSettings settings) = await dienste();
+      final List<Dhikr> morgens =
+          azkarFor(time: AzkarTime.morgens, level: AzkarLevel.leicht);
+      await store.tippe(
+          AzkarTime.morgens, morgens.firstWhere((Dhikr d) => d.count == 1),
+          morgens);
+
+      await tester.pumpWidget(rahmen(store, settings));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Gesprochen · 1'), findsOneWidget);
+
+      await tester.tap(find.text('Abend-Azkar').first);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Gesprochen'), findsNothing);
+    });
+  });
+
+  group('Der Knopf zum Abhaken ist als solcher zu erkennen', () {
+    testWidgets('ein einmaliges Dhikr sagt „Abhaken", nicht „einmal"',
+        (WidgetTester tester) async {
+      await oeffne(tester);
+      expect(find.text('Abhaken'), findsWidgets);
+      expect(find.text('einmal'), findsNothing);
+    });
+
+    testWidgets('ein mehrfaches zeigt den Stand', (WidgetTester tester) async {
+      await oeffne(tester);
+      expect(find.text('0 / 3'), findsWidgets);
+    });
+  });
+
   group('Die Stufe ist keine Mauer', () {
     testWidgets('auf „Leicht" stehen die übrigen unter „Mehr, wenn du magst"',
         (WidgetTester tester) async {

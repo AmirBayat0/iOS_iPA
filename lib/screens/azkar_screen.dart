@@ -42,6 +42,24 @@ class _AzkarScreenState extends State<AzkarScreen> {
         azkarDarueberHinaus(time: aktiv, level: settings.level);
     final AzkarFenster? fenster = settings.fenster(aktiv, jetzt);
 
+    // Was gesprochen ist, verlässt die Liste.
+    //
+    // **Warum.** Ein abgehaktes Dhikr blieb vorher an seiner Stelle stehen,
+    // nur blasser — und arabische Texte sind lang. Auf der vollständigen
+    // Stufe scrollte man am Ende an zwanzig erledigten Karten vorbei, um die
+    // letzte offene zu finden. Gelöscht wird trotzdem nichts: Das
+    // Gesprochene sammelt sich unten in einem Abschnitt, den man aufklappen
+    // kann — zum Nachlesen und zum Zurücknehmen.
+    bool gesprochen(Dhikr d) => store.istFertig(aktiv, d);
+    final List<Dhikr> offen =
+        pensum.where((Dhikr d) => !gesprochen(d)).toList();
+    final List<Dhikr> offenDarueber =
+        darueber.where((Dhikr d) => !gesprochen(d)).toList();
+    final List<Dhikr> erledigt = <Dhikr>[
+      for (final Dhikr d in <Dhikr>[...pensum, ...darueber])
+        if (gesprochen(d)) d,
+    ];
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Azkar'),
@@ -70,9 +88,13 @@ class _AzkarScreenState extends State<AzkarScreen> {
           _Kopf(zeit: aktiv, fenster: fenster, pensum: pensum, store: store),
           const SizedBox(height: Insets.md),
           if (!settings.eingerichtet) const _KeinOrt(),
-          for (final Dhikr d in pensum)
+          for (final Dhikr d in offen)
             _DhikrKarte(dhikr: d, zeit: aktiv, pensum: pensum),
-          if (darueber.isNotEmpty) ...<Widget>[
+          if (offen.isEmpty && erledigt.isNotEmpty)
+            const _AllesGesprochen(),
+          if (erledigt.isNotEmpty)
+            _Gesprochen(eintraege: erledigt, zeit: aktiv),
+          if (offenDarueber.isNotEmpty) ...<Widget>[
             const SizedBox(height: Insets.lg),
             Text(
               'Mehr, wenn du magst',
@@ -91,7 +113,7 @@ class _AzkarScreenState extends State<AzkarScreen> {
                   ?.copyWith(color: Theme.of(context).hintColor),
             ),
             const SizedBox(height: Insets.sm),
-            for (final Dhikr d in darueber)
+            for (final Dhikr d in offenDarueber)
               _DhikrKarte(dhikr: d, zeit: aktiv, pensum: pensum, extra: true),
           ],
           const SizedBox(height: Insets.lg),
@@ -185,6 +207,106 @@ class _Kopf extends StatelessWidget {
       '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 }
 
+/// Die gesprochenen Azkar des Tages, zusammengeklappt.
+///
+/// **Ein Abschnitt und kein Löschen.** „Weg" wäre zu viel: Man will
+/// nachsehen können, was man schon gesprochen hat, und sich vertippen darf
+/// man auch. Zugeklappt steht hier nur eine Zeile; aufgeklappt eine kurze
+/// Liste, in der ein Tipp das Dhikr wieder öffnet.
+///
+/// Vorher war das Zurücknehmen ein langes Drücken auf der Karte — ein Weg,
+/// den niemand findet, der ihn nicht kennt.
+class _Gesprochen extends StatelessWidget {
+  const _Gesprochen({required this.eintraege, required this.zeit});
+
+  final List<Dhikr> eintraege;
+  final AzkarTime zeit;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AzkarStore store = AzkarScope.of(context);
+
+    return Card(
+      margin: const EdgeInsets.only(top: Insets.sm),
+      color: theme.colorScheme.surfaceContainerHighest,
+      child: Theme(
+        // Ohne das zieht ExpansionTile eine Linie über und unter sich, und
+        // in einer Karte sieht das aus wie ein Fehler.
+        data: theme.copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          leading: Icon(Icons.check_circle, color: theme.colorScheme.primary),
+          title: Text(
+            'Gesprochen · ${eintraege.length}',
+            style: theme.textTheme.titleSmall
+                ?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          subtitle: Text(
+            'Zum Nachsehen oder Zurücknehmen aufklappen',
+            style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+          ),
+          childrenPadding: const EdgeInsets.only(bottom: Insets.sm),
+          children: <Widget>[
+            for (final Dhikr d in eintraege)
+              ListTile(
+                dense: true,
+                leading: Icon(Icons.check,
+                    size: 18, color: theme.colorScheme.primary),
+                title: Text(
+                  _kurz(d),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium,
+                ),
+                subtitle: Text(
+                  d.count == 1 ? d.source : '${d.count}× · ${d.source}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall
+                      ?.copyWith(color: theme.hintColor),
+                ),
+                trailing: TextButton(
+                  onPressed: () => store.zuruecksetzen(zeit, d),
+                  child: const Text('Zurück'),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Der Anfang der Lautschrift — genug, um ein Dhikr wiederzuerkennen,
+  /// ohne die ganze Karte noch einmal aufzubauen.
+  static String _kurz(Dhikr d) {
+    final List<String> woerter = d.transliteration.split(RegExp(r'\s+'));
+    final String anfang = woerter.take(5).join(' ');
+    return woerter.length > 5 ? '$anfang …' : anfang;
+  }
+}
+
+/// Alles gesprochen — und nichts mehr, was drängt.
+class _AllesGesprochen extends StatelessWidget {
+  const _AllesGesprochen();
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: Insets.lg),
+      child: Column(
+        children: <Widget>[
+          Icon(Icons.done_all, size: 36, color: theme.colorScheme.primary),
+          const SizedBox(height: Insets.sm),
+          Text('Durch für diese Zeit',
+              style: theme.textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+}
+
 /// Eine Karte je Dhikr. Antippen zählt hoch.
 class _DhikrKarte extends StatelessWidget {
   const _DhikrKarte({
@@ -212,11 +334,12 @@ class _DhikrKarte extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: Insets.md),
       child: InkWell(
         onTap: fertig ? null : () => store.tippe(zeit, dhikr, pensum),
+        // Für ein halb gezähltes Dhikr („2 von 3") der Weg zurück. Was ganz
+        // gesprochen ist, steht nicht mehr hier, sondern im Abschnitt
+        // „Gesprochen" — dort gibt es dafür einen sichtbaren Knopf.
         onLongPress:
             stand == 0 ? null : () => store.zuruecksetzen(zeit, dhikr),
-        child: Opacity(
-          opacity: fertig ? 0.55 : 1,
-          child: Padding(
+        child: Padding(
             padding: const EdgeInsets.all(Insets.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -266,14 +389,18 @@ class _DhikrKarte extends StatelessWidget {
                 ),
               ],
             ),
-          ),
         ),
       ),
     );
   }
 }
 
-/// „3 / 7" — und ein Haken, wenn es steht.
+/// Der Knopf zum Abhaken — und zugleich der Stand.
+///
+/// **Warum er wie ein Knopf aussieht.** Vorher stand bei einem einmaligen
+/// Dhikr nur das Wort „einmal" da; dass die Karte sich antippen lässt,
+/// musste man raten. Jetzt steht dort „Abhaken" mit einem leeren Kreis, und
+/// bei mehrfachen „3 / 7" mit einem Pluszeichen.
 class _Zaehler extends StatelessWidget {
   const _Zaehler({
     required this.stand,
@@ -289,23 +416,30 @@ class _Zaehler extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: fertig
             ? theme.colorScheme.secondaryContainer
-            : theme.colorScheme.surfaceContainerHighest,
+            : theme.colorScheme.primaryContainer,
         borderRadius: Radii.chipShape,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          if (fertig) ...<Widget>[
-            const Icon(Icons.check, size: 16),
-            const SizedBox(width: 4),
-          ],
+          Icon(
+            fertig
+                ? Icons.check_circle
+                : (ziel == 1 ? Icons.circle_outlined : Icons.add),
+            size: 16,
+            color: theme.colorScheme.onPrimaryContainer,
+          ),
+          const SizedBox(width: 6),
           Text(
-            ziel == 1 ? (fertig ? 'gesprochen' : 'einmal') : '$stand / $ziel',
-            style: theme.textTheme.labelLarge,
+            fertig ? 'gesprochen' : (ziel == 1 ? 'Abhaken' : '$stand / $ziel'),
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.onPrimaryContainer,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
