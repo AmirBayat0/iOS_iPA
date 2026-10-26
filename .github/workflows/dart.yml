@@ -10,33 +10,57 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: subosito/flutter-action@v2
+      # 1. Instalar Java necesario para compilar Kotlin
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
         with:
-          channel: 'stable'
-          architecture: x64
-      - run: flutter pub get
-      
+          java-version: '17'
+          distribution: 'zulu'
 
-      - run: pod repo update
-        working-directory: ios
+      # 2. Darle permisos de ejecución al script de Gradle
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
 
-      - run: flutter build ios --release --no-codesign
+      # 3. Compilar y enlazar el framework de Kotlin para iOS
+      - name: Build Kotlin Shared Framework
+        run: ./gradlew :shared:linkReleaseFrameworkIosArm64
 
-      - run: mkdir Payload
-        working-directory: build/ios/iphoneos
+      # 4. Instalar dependencias de CocoaPods (solo si tu app las usa)
+      - name: Install Pods
+        run: |
+          cd iosApp
+          if [ -f "Podfile" ]; then
+            pod install
+          fi
 
-      - run: mv Runner.app/ Payload
-        working-directory: build/ios/iphoneos
+      # 5. Compilar la app de iOS con Xcode y definir ruta de salida fija
+      - name: Build iOS App via Xcode
+        run: |
+          xcodebuild -project iosApp/iosApp.xcodeproj \
+                     -scheme iosApp \
+                     -configuration Release \
+                     -sdk iphoneos \
+                     -derivedDataPath build/ios \
+                     CODE_SIGNING_ALLOWED=NO \
+                     CODE_SIGNING_REQUIRED=NO \
+                     clean build
 
-      - name: Zip output
-        run: zip -qq -r -9 FlutterIpaExport.ipa Payload
-        working-directory: build/ios/iphoneos
+      # 6. Crear la estructura para empaquetar el IPA (Ruta fija garantizada)
+      - name: Create IPA Structure
+        run: |
+          mkdir -p Payload
+          mv build/ios/Build/Products/Release-iphoneos/iosApp.app Payload/
 
+      # 7. Comprimir la carpeta Payload en formato .ipa
+      - name: Zip output into IPA
+        run: zip -qq -r -9 KMPIpaExport.ipa Payload
+
+      # 8. Subir el IPA final a la sección de Releases de GitHub
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: build/ios/iphoneos/FlutterIpaExport.ipa
+          file: KMPIpaExport.ipa
           tag: v1.0
           overwrite: true
-          body: "This is first release"
+          body: "Esta es la primera compilación IPA de mi app Kotlin Multiplatform"
